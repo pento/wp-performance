@@ -1,0 +1,54 @@
+version: '3.1'
+
+services:
+
+  wordpress:
+    build:
+      context: .
+    volumes:
+      - wordpress:/var/www/html
+    environment:
+      WORDPRESS_DB_PASSWORD: password
+    depends_on:
+      - mysql
+
+  web:
+    image: nginx
+    ports:
+      - 9876:80
+    volumes:
+      - wordpress:/var/www/html
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - wordpress
+
+  wpcli:
+    image: wordpress:cli
+    volumes:
+      - wordpress:/var/www/html
+    environment:
+      WORDPRESS_DB_PASSWORD: password
+    depends_on:
+      - mysql
+      - wordpress
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress_test
+    healthcheck:
+      test:
+        - CMD
+        - mysql
+        - '-e'
+        - SHOW TABLES FROM wordpress_test
+        - '-uroot'
+        - '-ppassword'
+        - '-hmysql'
+        - '--protocol=tcp'
+      interval: 1s
+      retries: '100'
+
+volumes:
+  wordpress:
